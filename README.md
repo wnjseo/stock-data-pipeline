@@ -15,8 +15,8 @@ Project Goals
 - Automate ETL workflows
 
 Pipeline
- yfinance
+yfinance
    ↓
- pandas
+pandas
    ↓
- PostgreSQL
+PostgreSQL
