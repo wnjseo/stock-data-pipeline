@@ -9,7 +9,7 @@ def load_company_info(company_df, tickers):
     
     Args: 
         company_df (pd.DataFrame): 회사 정보 데이터프레임
-        tickers (list): 조회한 S&P 500 티커 목록
+        tickers (list): 이번 실행에서 조회를 시도한 전체 티커 목록
     """
 
     # 저장할 데이터가 없으면 DB 작업을 수행하지 않는다.
