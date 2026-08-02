@@ -12,6 +12,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s"
 )
+logger = logging.getLogger(__name__)
 
 def run_company_etl():
     """
@@ -27,17 +28,17 @@ def run_company_etl():
 
     try:
         job_id = start_etl_job("company_etl")
-        logging.info("company ETL started | job_id=%d", job_id)
+        logger.info("company ETL started | job_id=%d", job_id)
         
         # Extract
         curr_step = "extract"
         curr_task = "get_company_list"
         tickers = get_company_list()
-        logging.info("Scraped %d tickers", len(tickers))
+        logger.info("Scraped %d tickers", len(tickers))
 
         curr_task = "extract_company_info"
         company_df, errors = extract_company_info(tickers)
-        logging.info("Extract completed: %d tickers, %d failed", len(company_df), len(errors))
+        logger.info("Extract completed: %d tickers, %d failed", len(company_df), len(errors))
 
         # Load
         curr_step = "load"
@@ -45,7 +46,7 @@ def run_company_etl():
         load_company_info(company_df, tickers)
 
         load_error_log(job_id, errors)
-        logging.info("Load completed")
+        logger.info("Load completed")
 
         status = "partial_success" if errors else "success"
 
@@ -56,7 +57,7 @@ def run_company_etl():
             success_record=len(company_df),
             failed_record=len(errors)
         )
-        logging.info("company ETL finished")
+        logger.info("company ETL finished")
 
     except Exception as e:
         if job_id is not None:
@@ -70,7 +71,7 @@ def run_company_etl():
                     failed_record=None
                 )
             except Exception:
-                logging.exception("finish_etl_job failed")
+                logger.exception("finish_etl_job failed")
 
             try:
                 # 파이프라인 자체에서 발생한 오류를 기록한다.
@@ -84,7 +85,7 @@ def run_company_etl():
 
                 load_error_log(job_id, errors)
             except Exception:
-                logging.exception("load_error_log failed")
+                logger.exception("load_error_log failed")
         raise
 
 if __name__ == "__main__":

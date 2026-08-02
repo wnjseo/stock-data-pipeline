@@ -1,16 +1,16 @@
 from datetime import timedelta
 import time
 import logging
-
 from sqlalchemy import text
 import yfinance as yf
 import pandas as pd
-
+from db import engine
 from config import (
     BACKFILL_START_DATE, MAX_RETRIES, RETRY_DELAY, REQUEST_DELAY,
     INDICATOR_LOOKBACK_DAYS, PRICE_COLUMNS, HISTORY_COLUMNS
 )
-from db import engine
+
+logger = logging.getLogger(__name__)
 
 def get_active_tickers():
     """
@@ -103,7 +103,7 @@ def extract_daily_stock_info(tickers, last_dates):
                     if attempt < MAX_RETRIES-1:
                         time.sleep(RETRY_DELAY)
                         continue
-                    logging.warning(
+                    logger.warning(
                         "%s: no data returned from yfinance (start=%s)",
                         ticker,
                         start_date

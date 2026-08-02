@@ -3,6 +3,8 @@ import pandas as pd
 from extract_stock import get_price_history_for_indicator
 from config import PRICE_COLUMNS, INDICATOR_COLUMNS, HISTORY_COLUMNS, INDICATOR_LOOKBACK_DAYS
 
+logger = logging.getLogger(__name__)
+
 def transform_daily_stock_price(raw_stock_df):
     """
     원본 OHLCV를 daily_stock_price 테이블 형식으로 변환한다.
@@ -33,7 +35,7 @@ def transform_daily_stock_price(raw_stock_df):
     # 필수 컬럼에 결측치가 있는 행 제거
     na_mask = price_df.isna().any(axis=1)
     if na_mask.any():
-        logging.warning("%d rows removed due to missing values", na_mask.sum())
+        logger.warning("%d rows removed due to missing values", na_mask.sum())
         price_df = price_df[~na_mask]
 
     # DB 스키마에 맞게 데이터 타입 변환

@@ -13,6 +13,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s"
 )
+logger = logging.getLogger(__name__)
 
 def run_stock_etl():
     """
@@ -28,20 +29,20 @@ def run_stock_etl():
 
     try:
         job_id = start_etl_job("stock_etl")
-        logging.info("Stock ETL started | job_id=%d", job_id)
+        logger.info("Stock ETL started | job_id=%d", job_id)
         
         # Extract
         curr_step = "extract"
         curr_task = "get_active_tickers"
         tickers = get_active_tickers()
-        logging.info("Retrieved %d active tickers", len(tickers))
+        logger.info("Retrieved %d active tickers", len(tickers))
 
         curr_task = "get_last_dates"
         last_dates = get_last_dates(tickers)
 
         curr_task = "extract_daily_stock_info"
         stock_df, errors = extract_daily_stock_info(tickers, last_dates)
-        logging.info("Extract completed: %d tickers, %d failed", stock_df["ticker"].nunique(), len(errors))
+        logger.info("Extract completed: %d tickers, %d failed", stock_df["ticker"].nunique(), len(errors))
 
         # Transform
         curr_step = "transform"
@@ -50,7 +51,7 @@ def run_stock_etl():
 
         curr_task = "transform_daily_stock_indicator"
         indicator_df = transform_daily_stock_indicator(price_df, last_dates)
-        logging.info("Transform completed: %d price rows, %d indicator rows", len(price_df), len(indicator_df))
+        logger.info("Transform completed: %d price rows, %d indicator rows", len(price_df), len(indicator_df))
 
         # Load
         curr_step = "load"
@@ -58,7 +59,7 @@ def run_stock_etl():
         load_stock_info(price_df, indicator_df)
 
         load_error_log(job_id, errors)
-        logging.info("Load completed")
+        logger.info("Load completed")
 
         status = "partial_success" if errors else "success"
 
@@ -69,7 +70,7 @@ def run_stock_etl():
             success_record=price_df["ticker"].nunique(),
             failed_record=len(errors)
         )
-        logging.info("Stock ETL finished")
+        logger.info("Stock ETL finished")
 
     except Exception as e:
         if job_id is not None:
@@ -83,7 +84,7 @@ def run_stock_etl():
                     failed_record=None
                 )
             except Exception:
-                logging.exception("finish_etl_job failed")
+                logger.exception("finish_etl_job failed")
 
             try:
                 # 파이프라인 자체에서 발생한 오류를 기록한다.
@@ -97,7 +98,7 @@ def run_stock_etl():
 
                 load_error_log(job_id, errors)
             except Exception:
-                logging.exception("load_error_log failed")
+                logger.exception("load_error_log failed")
         raise
 
 if __name__ == "__main__":
