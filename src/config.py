@@ -15,7 +15,8 @@ PRICE_COLUMNS = [
     "low_price",
     "close_price",
     "adj_close_price",
-    "volume"
+    "volume",
+    "ohlc_valid"
 ]
 
 HISTORY_COLUMNS = [

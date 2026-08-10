@@ -26,15 +26,16 @@ def load_stock_info(price_df, indicator_df):
     ]
 
     price_query = text("""
-        INSERT INTO daily_stock_price (ticker, trade_date, open_price, high_price, low_price, close_price, adj_close_price, volume)
-        VALUES (:ticker, :trade_date, :open_price, :high_price, :low_price, :close_price, :adj_close_price, :volume)
+        INSERT INTO daily_stock_price (ticker, trade_date, open_price, high_price, low_price, close_price, adj_close_price, volume, ohlc_valid)
+        VALUES (:ticker, :trade_date, :open_price, :high_price, :low_price, :close_price, :adj_close_price, :volume, :ohlc_valid)
         ON CONFLICT (ticker, trade_date) DO UPDATE SET
             open_price = EXCLUDED.open_price,
             high_price = EXCLUDED.high_price,
             low_price = EXCLUDED.low_price,
             close_price = EXCLUDED.close_price,
             adj_close_price = EXCLUDED.adj_close_price,
-            volume = EXCLUDED.volume;
+            volume = EXCLUDED.volume,
+            ohlc_valid = EXCLUDED.ohlc_valid;
     """)
 
     indicator_query = text ("""

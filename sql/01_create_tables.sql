@@ -17,6 +17,7 @@ CREATE TABLE daily_stock_price (
     close_price NUMERIC(12,4) NOT NULL CHECK (close_price >= 0),
     adj_close_price NUMERIC(12,4) NOT NULL CHECK (adj_close_price >= 0),
     volume BIGINT NOT NULL CHECK (volume >= 0),
+    ohlc_valid BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     PRIMARY KEY (ticker, trade_date),
@@ -25,15 +26,20 @@ CREATE TABLE daily_stock_price (
         REFERENCES company(ticker),
 
     CHECK (high_price >= low_price),
-    CHECK (open_price BETWEEN low_price AND high_price),
-    CHECK (close_price BETWEEN low_price AND high_price)
+    CHECK (
+        ohlc_valid = FALSE
+        OR (
+            low_price <= LEAST(open_price, high_price, close_price)
+            AND high_price >= GREATEST(open_price, low_price, close_price)
+        )
+    )
 );
 
 CREATE TABLE daily_stock_indicator (
     ticker VARCHAR(10) NOT NULL,
     trade_date DATE NOT NULL,
-    daily_return NUMERIC(8,6),
-    volume_change_rate NUMERIC(8,4),
+    daily_return NUMERIC(10,6),
+    volume_change_rate NUMERIC(12,4),
     ma5 NUMERIC(12,4),
     ma20 NUMERIC(12,4),
     ma60 NUMERIC(12,4),

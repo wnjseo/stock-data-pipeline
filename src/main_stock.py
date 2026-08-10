@@ -11,7 +11,8 @@ logging.basicConfig(
     filename=log_path, 
     filemode="a", 
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s"
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    encoding="utf-8"
 )
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,8 @@ def run_stock_etl():
         logger.info("Stock ETL finished")
 
     except Exception as e:
+        logger.exception("Stock ETL failed")
+
         if job_id is not None:
             try:
                 # ETL 작업을 실패 상태로 종료한다.
@@ -84,7 +87,7 @@ def run_stock_etl():
                     failed_record=None
                 )
             except Exception:
-                logger.exception("finish_etl_job failed")
+                logger.exception("Finish_etl_job failed")
 
             try:
                 # 파이프라인 자체에서 발생한 오류를 기록한다.
@@ -98,7 +101,7 @@ def run_stock_etl():
 
                 load_error_log(job_id, errors)
             except Exception:
-                logger.exception("load_error_log failed")
+                logger.exception("Load_error_log failed")
         raise
 
 if __name__ == "__main__":

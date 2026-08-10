@@ -1,5 +1,6 @@
 import logging
 import pandas as pd
+import numpy as np
 from extract_stock import get_price_history_for_indicator
 from config import PRICE_COLUMNS, INDICATOR_COLUMNS, HISTORY_COLUMNS, INDICATOR_LOOKBACK_DAYS
 
@@ -29,8 +30,9 @@ def transform_daily_stock_price(raw_stock_df):
         "Adj Close": "adj_close_price",
         "Volume": "volume"
     })
-    
-    price_df = df[PRICE_COLUMNS].copy()
+
+    BASE_COLUMNS = [c for c in PRICE_COLUMNS if c != "ohlc_valid"]
+    price_df = df[BASE_COLUMNS].copy()
 
     # 필수 컬럼에 결측치가 있는 행 제거
     na_mask = price_df.isna().any(axis=1)
@@ -38,9 +40,20 @@ def transform_daily_stock_price(raw_stock_df):
         logger.warning("%d rows removed due to missing values", na_mask.sum())
         price_df = price_df[~na_mask]
 
+    # OHLC 정합성 검증
+    invalid_ohlc = (
+            (price_df["open_price"] < price_df["low_price"]) |
+            (price_df["open_price"] > price_df["high_price"]) | 
+            (price_df["close_price"] < price_df["low_price"]) | 
+            (price_df["close_price"] > price_df["high_price"])
+        )
+    price_df["ohlc_valid"] = ~invalid_ohlc
+    if invalid_ohlc.any():
+        logger.warning("%d rows have invalid OHLC values", invalid_ohlc.sum())
+    
     # DB 스키마에 맞게 데이터 타입 변환
     price_df["trade_date"] = pd.to_datetime(price_df["trade_date"]).dt.date
-    price_df["volume"] = price_df["volume"].astype("int64")   
+    price_df["volume"] = price_df["volume"].astype("int64")  
 
     return price_df
 
@@ -55,6 +68,8 @@ def transform_daily_stock_indicator(price_df, last_dates):
     Returns:
         pd.DataFrame: daily_stock_indicator 적재용 데이터프레임 (ticker, trade_date, 파생 지표)
     """
+
+    COMBINED_COLUMNS = [c for c in HISTORY_COLUMNS if c != "tickers"]
 
     if price_df.empty:
         return pd.DataFrame(columns=INDICATOR_COLUMNS)
@@ -81,11 +96,13 @@ def transform_daily_stock_indicator(price_df, last_dates):
         if ticker in backfill_tickers:
             combined = new_data
         else:
-            past_data = history_group.get(ticker, pd.DataFrame(columns=HISTORY_COLUMNS[1:]))
+            past_data = history_group.get(ticker, pd.DataFrame(columns=COMBINED_COLUMNS))
             combined = pd.concat([past_data, new_data], ignore_index=True).drop_duplicates("trade_date").sort_values("trade_date")
 
         combined["daily_return"] = combined["adj_close_price"].pct_change()
+        combined["daily_return"] = combined["daily_return"].replace([np.inf, -np.inf], np.nan)
         combined["volume_change_rate"] = combined["volume"].pct_change()
+        combined["volume_change_rate"] = combined["volume_change_rate"].replace([np.inf, -np.inf], np.nan)
         combined["ma5"] = combined["adj_close_price"].rolling(5).mean()
         combined["ma20"] = combined["adj_close_price"].rolling(20).mean()
         combined["ma60"] = combined["adj_close_price"].rolling(60).mean()
