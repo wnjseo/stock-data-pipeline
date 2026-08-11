@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, date
 import time
 import logging
 from sqlalchemy import text
@@ -103,11 +103,28 @@ def extract_daily_stock_info(tickers, last_dates):
                     if attempt < MAX_RETRIES-1:
                         time.sleep(RETRY_DELAY)
                         continue
-                    logger.warning(
-                        "%s: no data returned from yfinance (start=%s)",
-                        ticker,
-                        start_date
-                    )
+
+                    if start_date >= date.today():
+                        # 현재 시점에서 신규 데이터가 없는 경우
+                        logger.info(
+                            "%s: no new available data (start=%s)", 
+                            ticker, 
+                            start_date
+                        )
+                    else:
+                        # 과거 데이터를 요청했으나 데이터가 없는 경우
+                        logger.warning(
+                            "%s: no data returned from yfinance (start=%s)",
+                            ticker,
+                            start_date
+                        )
+                        errors.append({
+                            "ticker": ticker,
+                            "pipeline_step": "extract",
+                            "task_name": "extract_daily_stock_info",
+                            "error_type": "NoDataReturned",
+                            "error_msg": "no data returned from yfinance"
+                        })
                     break
 
                 # yfinance가 변환한 MultiIndex 컬럼을 단일 레벨 컬럼으로 변환
