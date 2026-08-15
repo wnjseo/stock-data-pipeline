@@ -1,4 +1,3 @@
-from datetime import date
 import time
 import logging
 from sqlalchemy import text
