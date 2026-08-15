@@ -2,8 +2,10 @@ import logging
 import pandas as pd
 import numpy as np
 from extract_stock import get_price_history_for_indicator
-from config import PRICE_COLUMNS, INDICATOR_COLUMNS, HISTORY_COLUMNS, INDICATOR_LOOKBACK_DAYS
-
+from config import (
+    PRICE_COLUMNS, INDICATOR_COLUMNS, HISTORY_COLUMNS, 
+    INDICATOR_LOOKBACK_DAYS, REFRESH_LOOKBACK_DAYS
+)
 logger = logging.getLogger(__name__)
 
 def transform_daily_stock_price(raw_stock_df):
@@ -57,19 +59,19 @@ def transform_daily_stock_price(raw_stock_df):
 
     return price_df
 
-def transform_daily_stock_indicator(price_df, last_dates):
+def transform_daily_stock_indicator(price_df, refresh_start_dates):
     """
     주가 데이터를 기반으로 파생 지표를 계산하여 daily_stock_indicator 테이블 형식으로 변환한다. 
 
     Args:
         price_df (pd.DataFrame): 주가 정보 데이터프레임
-        last_dates (dict[str, date]): 티커를 키로 마지막 수집 날짜를 갖는 딕셔너리
+        refresh_start_dates (dict[str, date]): 티커별 재수집 시작 날짜를 갖는 딕셔너리
 
     Returns:
         pd.DataFrame: daily_stock_indicator 적재용 데이터프레임 (ticker, trade_date, 파생 지표)
     """
 
-    COMBINED_COLUMNS = [c for c in HISTORY_COLUMNS if c != "tickers"]
+    COMBINED_COLUMNS = [c for c in HISTORY_COLUMNS if c != "ticker"]
 
     if price_df.empty:
         return pd.DataFrame(columns=INDICATOR_COLUMNS)
@@ -77,11 +79,11 @@ def transform_daily_stock_indicator(price_df, last_dates):
     tickers = price_df["ticker"].unique().tolist()
 
     # 최초 적재와 증분 적재 대상을 분리
-    backfill_tickers = [t for t in tickers if t not in last_dates]
-    incremental_tickers = [t for t in tickers if t in last_dates]
+    backfill_tickers = [t for t in tickers if t not in refresh_start_dates]
+    incremental_tickers = [t for t in tickers if t in refresh_start_dates]
 
     # 파생지표 계산을 위해 증분 적재 대상의 과거 데이터를 조회
-    history_df = get_price_history_for_indicator(incremental_tickers, days=INDICATOR_LOOKBACK_DAYS)
+    history_df = get_price_history_for_indicator(incremental_tickers, days=INDICATOR_LOOKBACK_DAYS+REFRESH_LOOKBACK_DAYS)
     history_group = {
         t: df for t, df in history_df.groupby("ticker") 
     }
@@ -97,7 +99,7 @@ def transform_daily_stock_indicator(price_df, last_dates):
             combined = new_data
         else:
             past_data = history_group.get(ticker, pd.DataFrame(columns=COMBINED_COLUMNS))
-            combined = pd.concat([past_data, new_data], ignore_index=True).drop_duplicates("trade_date").sort_values("trade_date")
+            combined = pd.concat([past_data, new_data], ignore_index=True).drop_duplicates("trade_date", keep="last").sort_values("trade_date")
 
         combined["daily_return"] = combined["adj_close_price"].pct_change()
         combined["daily_return"] = combined["daily_return"].replace([np.inf, -np.inf], np.nan)
@@ -108,7 +110,7 @@ def transform_daily_stock_indicator(price_df, last_dates):
         combined["ma60"] = combined["adj_close_price"].rolling(60).mean()
         combined["ma120"] = combined["adj_close_price"].rolling(120).mean()
 
-        # 신규 데이터에 대해서만 계산 결과 저장
+        # 신규 및 재수집 데이터에 대해서만 계산 결과 저장
         result = combined[combined["trade_date"].isin(new_data["trade_date"])].copy()
         result["ticker"] = ticker
 

@@ -1,10 +1,11 @@
 import logging
 import os
-from extract_stock import get_active_tickers, get_last_dates, extract_daily_stock_info
+from extract_stock import get_active_tickers, get_refresh_start_dates, extract_daily_stock_info
 from transform_stock import transform_daily_stock_price, transform_daily_stock_indicator
 from load_stock import load_stock_info
 from etl_history import start_etl_job, finish_etl_job
 from error_log import load_error_log
+from config import REFRESH_LOOKBACK_DAYS
 
 log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "etl.log")
 logging.basicConfig(
@@ -38,11 +39,11 @@ def run_stock_etl():
         tickers = get_active_tickers()
         logger.info("Retrieved %d active tickers", len(tickers))
 
-        curr_task = "get_last_dates"
-        last_dates = get_last_dates(tickers)
+        curr_task = "get_refresh_start_dates"
+        refresh_start_dates = get_refresh_start_dates(tickers, days=REFRESH_LOOKBACK_DAYS)
 
         curr_task = "extract_daily_stock_info"
-        stock_df, errors = extract_daily_stock_info(tickers, last_dates)
+        stock_df, errors = extract_daily_stock_info(tickers, refresh_start_dates)
         logger.info("Extract completed: %d tickers, %d failed", stock_df["ticker"].nunique(), len(errors))
 
         # Transform
@@ -51,7 +52,7 @@ def run_stock_etl():
         price_df = transform_daily_stock_price(stock_df)
 
         curr_task = "transform_daily_stock_indicator"
-        indicator_df = transform_daily_stock_indicator(price_df, last_dates)
+        indicator_df = transform_daily_stock_indicator(price_df, refresh_start_dates)
         logger.info("Transform completed: %d price rows, %d indicator rows", len(price_df), len(indicator_df))
 
         # Load
