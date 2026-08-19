@@ -1,6 +1,7 @@
 import pytest
 import pandas as pd
 import numpy as np
+import datetime
 from transform_stock import transform_daily_stock_price, transform_daily_stock_indicator
 from config import PRICE_COLUMNS
 
@@ -34,6 +35,18 @@ def test_transform_empty_df():
     assert result.empty
     assert list(result.columns) == PRICE_COLUMNS
 
+def test_transform_missing_value(mock_raw_df):
+    """
+    필수 컬럼에 결측치가 있는 행은 제거되어야 한다.
+    """
+    df = mock_raw_df.copy()
+    df.loc[0, "Volume"] = np.nan
+
+    result = transform_daily_stock_price(df)
+
+    assert len(result) == 1
+    assert result.iloc[0]["trade_date"] == datetime.date(2026, 8, 13)
+
 def test_transform_open_below_low(mock_raw_df):
     """
     open이 low보다 낮으면 ohlc_valid=False로 표시되어야 하고,
@@ -60,14 +73,11 @@ def test_transform_close_above_high(mock_raw_df):
     assert not result.iloc[0]["ohlc_valid"]
     assert result.iloc[0]["close_price"] == 210
 
-def test_transform_missing_value(mock_raw_df):
+def test_transform_data_type(mock_raw_df):
     """
-    필수 컬럼에 결측치가 있는 행은 제거되어야 한다.
+    DB 스키마에 맞게 데이터 타입이 변환되어야 한다.
     """
-    df = mock_raw_df.copy()
-    df.loc[0, "Volume"] = np.nan
+    result = transform_daily_stock_price(mock_raw_df)
 
-    result = transform_daily_stock_price(df)
-
-    assert len(result) == 1
-    assert result.iloc[0]["trade_date"] == "2026-08-13"
+    assert isinstance(result.iloc[0]["trade_date"], datetime.date)
+    assert result["volume"].dtype == "int64"
