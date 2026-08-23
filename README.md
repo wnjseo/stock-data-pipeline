@@ -25,9 +25,34 @@ S&P 500 구성 종목의 일별 주가 데이터를 자동 수집하여 PostgreS
 - **Window Task Scheduler**
 
 ## Architecture
+```mermaid
+flowchart TD
+    %% 노드 정의
+    Wiki[Wikipedia / S&P 500 List] -->|1. Ticker 수집| Extractor[Python Data Extractor]
+    YF[yfinance API] <-->|2. 주가 데이터 요청/응답| Extractor
+    
+    Extractor -->|3. 원시 데이터 저장| Raw[Raw Data / Local Parquet]
+    Raw -->|4. 정제 및 포맷팅| Transformer[Pandas Transformer]
+    
+    Transformer -->|5. DB Insert/Upsert| DB[(PostgreSQL)]
+    
+    Scheduler[Cron / Airflow] -->|매일 장 마감 후 실행| Extractor
+```
 
 ## Data Flow
 
 ## DB Schema
 
 ## Backfill / Incremental 전략
+
+## Data Quality
+
+## Error Handling
+
+## Retry
+
+## 실행 방법
+
+## 발견한 실제 문제와 해결 방법
+
+## 한계 및 향후 개선 사항
