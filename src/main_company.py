@@ -54,9 +54,9 @@ def run_company_etl():
         finish_etl_job(
             job_id,
             status,
-            total_record=len(tickers),
-            success_record=len(company_df),
-            failed_record=len(errors)
+            total_tickers=len(tickers),
+            success_tickers=len(company_df),
+            failed_tickers=len(errors)
         )
         logger.info("Company ETL finished")
 
@@ -69,9 +69,9 @@ def run_company_etl():
                 finish_etl_job(
                     job_id,
                     "failed",
-                    total_record=None,
-                    success_record=None,
-                    failed_record=None
+                    total_tickers=None,
+                    success_tickers=None,
+                    failed_tickers=None
                 )
             except Exception:
                 logger.exception("Finish_etl_job failed")

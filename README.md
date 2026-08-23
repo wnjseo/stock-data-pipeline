@@ -27,13 +27,16 @@ S&P 500 구성 종목의 일별 주가 데이터를 자동 수집하여 PostgreS
 ## Architecture
 ```mermaid
 flowchart TD
-    %% 노드 정의 및 연결
-    List[S&P 500 List] --> Extract[Extract]
-    API[yfinance API] --> Extract[Extract]
-
-    Extract --> Transform[Transform]
-    Transform --> Load[Load]
-    Load --> DB[(PostgreSQL)]
+    subgraph Company ETL
+        Wiki[Wikipedia / S&P 500 List] --> |Ticker 수집| E1[Extract]
+        E1 --> L1[Load]
+        L1 --> |Upsert| DB1[(Company Table)]
+    end
+    subgraph Stock ETL
+        Extract2 --> Transform[Transform]
+        Transform --> Load2[Load] 
+        Load2 --> |Upsert| DB2[[(Stock Table)]]
+    end
 ```
 
 ## Data Flow

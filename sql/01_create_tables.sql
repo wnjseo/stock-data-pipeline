@@ -58,9 +58,9 @@ CREATE TABLE etl_job_history (
     started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     ended_at TIMESTAMPTZ,
     job_status VARCHAR(20) NOT NULL CHECK (job_status IN ('running', 'success', 'failed', 'partial_success')),
-    total_record INT,
-    success_record INT,
-    failed_record INT,
+    total_tickers INT,
+    success_tickers INT,
+    failed_tickers INT,
 
     CHECK (ended_at IS NULL OR ended_at >= started_at)
 );
