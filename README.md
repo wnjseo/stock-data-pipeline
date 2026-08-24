@@ -27,15 +27,17 @@ S&P 500 구성 종목의 일별 주가 데이터를 자동 수집하여 PostgreS
 ## Architecture
 ```mermaid
 flowchart TD
+    W[Window Task Scheduler] --> E1[Extract]
+    W --> E2[Extract]
     subgraph Company ETL
-        Wiki[Wikipedia / S&P 500 List] --> |Ticker 수집| E1[Extract]
+        Wiki[Wikipedia / S&P 500 List] --> |Ticker 수집| E1
         E1 --> L1[Load]
         L1 --> |Upsert| DB1[(Company Table)]
     end
     subgraph Stock ETL
-        Extract2 --> Transform[Transform]
-        Transform --> Load2[Load] 
-        Load2 --> |Upsert| DB2[[(Stock Table)]]
+        E2 --> T[Transform]
+        T --> L2[Load] 
+        L2 --> |Upsert| DB2[(Stock Table)]
     end
 ```
 
