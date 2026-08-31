@@ -172,27 +172,33 @@ pip install -r requirements.txt
 ```
 
 ### Configuration
-1. `env`파일을 열어 DB 접속 정보를 입력
+1. `.env.example`을 복사하여 `.env` 파일을 생성한다.
 ```bash
 copy .env.example .env
 ```
-
-```bash
-DB_HOST = localhost
-DB_PORT = 5432
-DB_NAME = stock_etl
-DB_USER = your_user
-DB_PW = your_pw
+2. `.env` 파일에 PostgreSQL 접속 정보를 입력한다.
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=stock_etl
+DB_USER=your_user
+DB_PW=your_pw
 ```
-2. 스키마 생성
+3. 데이터베이스 스키마를 생성한다.
 ```bash
-   psql -U your_user -d stock_etl -f 01_create_tables.sql
+psql -U your_user -d stock_etl -f 01_create_tables.sql
 ```
 
 ### Run
+> 최초 실행 시 `main_company.py`를 먼저 실행하여 회사 정보를 적재해야
+> `main_stock.py`가 참조할 active 종목 목록이 생성된다.
+
+Windows Task Scheduler에 main_company.py와 main_stock.py를 등록하여 주기적으로 실행할 수 있다.
+
 ```bash
 # 회사 정보 ETL (주 1회 실행 권장)
 python main_company.py
+
 # 주가 ETL (장 마감 후 실행 권장)
 python main_stock.py
 ```
