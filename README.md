@@ -163,39 +163,39 @@ ETL 실행 중 발생한 오류는 `errors`에 수집한 후, 전체 ETL 실행�
 ## 실행 방법
 
 ### Installation
-\`\`\`bash
+```bash
 git clone https://github.com/wnjseo/stock-data-pipeline
 cd stock-data-pipeline
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
-\`\`\`
+```
 
 ### Configuration
 1. `env`파일을 열어 DB 접속 정보를 입력
-\`\`\`
+```bash
 copy .env.example .env
-\`\`\`
+```
 
-\`\`\`
+```bash
 DB_HOST = localhost
 DB_PORT = 5432
 DB_NAME = stock_etl
 DB_USER = your_user
 DB_PW = your_pw
-\`\`\`
+```
 2. 스키마 생성
-\`\`\`bash
+```bash
    psql -U your_user -d stock_etl -f 01_create_tables.sql
-\`\`\`
+```
 
 ### Run
-\`\`\`
+```bash
 # 회사 정보 ETL (주 1회 실행 권장)
 python main_company.py
 # 주가 ETL (장 마감 후 실행 권장)
 python main_stock.py
-\`\`\`
+```
 
 ## 발견한 실제 문제와 해결 방법
 
